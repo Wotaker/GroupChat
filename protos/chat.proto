@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+// Interface exported by the Messenger server, which handles the subscription mechanism
+service Messenger {
+
+    // Saves a new client to be served. If the clients already exists, do nothing
+    //
+    // Returns Ok Status if succeded
+    rpc Init (ClientInfo) returns (InitStatus) {}
+
+    // Assigns a client to the new group. If the group does not exist, creates a new one.
+    //
+    // Returns Ok Status if Succeded
+    rpc JoinGroup (JoinInfo) returns (Status) {}
+
+    // Sends a message to the specific group. If the group does not exists, informs
+    // by appropriate status code, otherwise returns Ok Status.
+    rpc SendTo (Message) returns (Status) {}
+
+    // Sends a stream of messages to the specific group. If the group does not exists, informs
+    // by appropriate status code, otherwise returns Ok Status.
+    rpc StreamSendTo (stream Message) returns (Status) {}
+}
+
+// Interface exported by the Reciver - a server on the client side that handles notifications
+service Reciver {
+    
+    // Transfers a new message to the reciver.
+    //
+    // Returns Ok status if the reception was succesfull
+    rpc Notify (Message) returns (Status) {}
+
+    // Transfers stream of messages to the reciver.
+    //
+    // Returns Ok status if the reception was succesfull
+    rpc StreamNotify (stream Message) returns (Status) {}
+}
+
+message MIME {
+    string type = 1;
+    string subtype = 2;
+    bytes data = 3;
+}
+
+message Message {
+    uint64 sender_id = 1;
+    uint64 group_id = 2;
+    uint32 priority = 3;
+    string text = 4;
+    MIME mime = 5;
+    // TODO Gdy wysyłamy wiadomość z id cytatu, to serwer przed propagacją, dołącza odpowiedni cytat.
+    // Można nawet tak zrobić, że w tekście jeżeli umieścimy %id%, to w tam pojawi się cytat
+    uint64 citation_id = 6;
+}
+
+message JoinInfo {
+    uint64 client_id = 1;
+    uint64 group_id = 2;
+}
+
+message ClientInfo {
+    string nick = 1;
+    string port = 2;
+}
+
+message Status {
+    uint32 code = 1;
+    string details = 2;
+}
+
+message InitStatus {
+    uint32 code = 1;
+    uint64 new_id = 2;
+    string details = 3;
+}
