@@ -45,7 +45,7 @@ message JoinInfo {
 }
 
 message ClientInfo {
-    string nick = 1;
+    string nickname = 1;
     string port = 2;
 }
 

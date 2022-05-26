@@ -1,8 +1,8 @@
 from src.messenger_resources import DataBase, MsgBuffer, NONE_GROUP_ID
-
-import grpc
 import gen.group_chat_pb2 as chat_pb2
 import gen.group_chat_pb2_grpc as chat_pb2_grpc
+
+import grpc
 from threading import Lock
 from concurrent import futures
 
@@ -24,7 +24,7 @@ class Messenger(chat_pb2_grpc.MessengerServicer):
     def Init(self, request, context):
 
         with LOCK_TABLE:
-            client_id = CLIENT_TABLE.add(request.nick, request.port, NONE_GROUP_ID)
+            client_id = CLIENT_TABLE.add(request.nickname, request.port, NONE_GROUP_ID)
             backuped = CLIENT_TABLE.backup()
 
         if not backuped:
@@ -103,4 +103,3 @@ if __name__ == "__main__":
 
     # Do not exit until the server terminates
     server.wait_for_termination()
-
