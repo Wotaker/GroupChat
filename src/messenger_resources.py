@@ -1,9 +1,11 @@
+from gen.group_chat_pb2 import Message
+
 import os
 import numpy as np
 import pandas as pd
 from queue import Queue
 
-from gen.group_chat_pb2 import Message
+from typing import List
 
 
 NONE_GROUP_ID = 0
@@ -34,12 +36,10 @@ class DataBase():
                 'GroupId': pd.Series(dtype='int')
             }).set_index("Id")
     
-
     def exists(self: object, id: int) -> bool:
         """checks if client with given id is in database"""
 
         return id in self.db.index.to_list()
-
 
     def add(self: object, nick: str, port: str, group_id: int) -> int:
         """adds new client to the client table"""
@@ -49,7 +49,6 @@ class DataBase():
         self.db.loc[id] = [nick, port, group_id]
         return id
 
-
     def delete(self: object, id: int) -> bool:
         """deletes client with given id, returns True on success, False otherwise"""
 
@@ -57,7 +56,6 @@ class DataBase():
             return False
         self.db.drop([id], inplace=True)
         return True
-
 
     def add_subscribtion(self: object, id: int, group_id: int) -> bool:
         """adds sbscribed group for a client with given id, or modifies subscribtion if present.
@@ -67,8 +65,10 @@ class DataBase():
             self.db.loc[(id, "GroupId")] = group_id
             return True
         return False
-
     
+    def get_subscribers(self: object, group_id: int) -> List[int]:
+        return self.db.loc[self.db['GroupId'] == group_id].index.to_list()
+
     def backup(self: object) -> bool:
         """saves the database to a backup csv file. Returns True if succeeded, 
         False otherwise"""
@@ -80,7 +80,6 @@ class DataBase():
             return False
         return True
     
-
     def load(self: object) -> bool:
         """loads the database from the backup csv file. 
         Returns True if succeeded, False otherwise"""
@@ -98,7 +97,6 @@ class DataBase():
             print(f"[Error] Unable to load backup database from {self.save_path}!")
             return False
         return True
-
 
     def show(self: object, sep=False):
         """prints the database"""

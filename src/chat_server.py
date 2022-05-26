@@ -4,12 +4,15 @@ import grpc
 import gen.group_chat_pb2 as chat_pb2
 import gen.group_chat_pb2_grpc as chat_pb2_grpc
 from threading import Lock
+from concurrent import futures
 
 CLIENT_TABLE = DataBase(name="clients_table")
 LOCK_TABLE = Lock()
 
 MSG_BUFFER = MsgBuffer()
 LOCK_BUFFER = Lock()
+
+PORT_NUMBER = 2137
 
 
 class Messenger(chat_pb2_grpc.MessengerServicer):
@@ -72,6 +75,32 @@ class Messenger(chat_pb2_grpc.MessengerServicer):
                         yield potential_msg
                         potential_msg = MSG_BUFFER.get(served_client)
     
+    def SendMsg(self, request, context):
+        
+        # Get subscribers of the message target group
+        with LOCK_TABLE:
+            subscribers = CLIENT_TABLE.get_subscribers(request.group_id)
+        
+        # Add message to the appropriate message buffers
+        with LOCK_BUFFER:
+            for client_id in subscribers:
+                MSG_BUFFER.put(client_id, request)
+        pass
 
 
+if __name__ == "__main__":
+
+    # Create a gRPC server
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+
+    # Register the server to gRPC
+    chat_pb2_grpc.add_MessengerServicer_to_server(servicer=Messenger(), server=server)
+
+    # Assigning port and starting the server
+    print("[Info] Starting server...")
+    server.add_insecure_port(f'[::]:{PORT_NUMBER}')
+    server.start()
+
+    # Do not exit until the server terminates
+    server.wait_for_termination()
 
