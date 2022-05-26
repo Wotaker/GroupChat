@@ -5,7 +5,7 @@ import os
 from queue import Queue
 
 from src.messenger_resources import DataBase, MsgBuffer
-from gen.chat_pb2 import Message, MIME as Mime
+from gen.group_chat_pb2 import Message, MIME as Mime
 
 
 def random_msg() -> Message:

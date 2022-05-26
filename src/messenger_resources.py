@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from queue import Queue
 
-from gen.chat_pb2 import Message
+from gen.group_chat_pb2 import Message
 
 
 NONE_GROUP_ID = 0
@@ -121,5 +121,15 @@ class MsgBuffer():
     
 
     def get(self: object, id: int) -> Message:
-        """gets the next msg in queue from client with given id."""
+        """gets the next message in queue from client with given id. If there is no such client,
+        or given client has no messages, returns None"""
+        
+        # No client with given id registered
+        if not (id in self.buffer.keys()):
+            return None
+        
+        # No messeges for client with given id
+        if self.buffer[id].empty():
+            return None
 
+        return self.buffer[id].get()

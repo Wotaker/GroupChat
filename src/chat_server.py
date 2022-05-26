@@ -1,21 +1,28 @@
 from src.messenger_resources import DataBase, MsgBuffer, NONE_GROUP_ID
 
 import grpc
-import gen.chat_pb2 as chat_pb2
-import gen.chat_pb2_grpc as chat_pb2_grpc
+import gen.group_chat_pb2 as chat_pb2
+import gen.group_chat_pb2_grpc as chat_pb2_grpc
+from threading import Lock
+
+CLIENT_TABLE = DataBase(name="clients_table")
+LOCK_TABLE = Lock()
+
+MSG_BUFFER = MsgBuffer()
+LOCK_BUFFER = Lock()
 
 
 class Messenger(chat_pb2_grpc.MessengerServicer):
 
     # Initialize Messenger with necessary data structures
     def __init__(self) -> None:
-        self.client_table = DataBase(name="clients_table")
-        self.msg_buffer = MsgBuffer()
+        print("[Info] Server Initialized")
 
     def Init(self, request, context):
 
-        client_id = self.client_table.add(request.nick, request.port, NONE_GROUP_ID)
-        backuped = self.client_table.backup()
+        with LOCK_TABLE:
+            client_id = CLIENT_TABLE.add(request.nick, request.port, NONE_GROUP_ID)
+            backuped = CLIENT_TABLE.backup()
 
         if not backuped:
             return chat_pb2.InitStatus(
@@ -32,7 +39,8 @@ class Messenger(chat_pb2_grpc.MessengerServicer):
     
     def JoinGroup(self, request, context):
 
-        success = self.client_table.add_subscribtion(request.client_id, request.group_id)
+        with LOCK_TABLE:
+            success = CLIENT_TABLE.add_subscribtion(request.client_id, request.group_id)
 
         if not success:
             return chat_pb2.Status(
@@ -48,8 +56,22 @@ class Messenger(chat_pb2_grpc.MessengerServicer):
                 f"{request.group_id} subscribtion group"
         )
     
-    def SendTo(self, request, context):
-        group_id = request.group_id
+    def Listen(self, request_iterator, context):
+
+        # Exiting this loop means that we have lost connection with a client
+        while True:
+            for listen_status in request_iterator:
+                served_client = listen_status.client_id
+                if not listen_status.confirm:
+                    print(f"[Warning] Listen-status from client {served_client} did not confirmed")
+                
+                # if there are any messages for the client, send those
+                with LOCK_BUFFER:
+                    potential_msg = MSG_BUFFER.get(served_client)
+                    while potential_msg is not None:
+                        yield potential_msg
+                        potential_msg = MSG_BUFFER.get(served_client)
+    
 
 
 

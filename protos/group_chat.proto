@@ -13,27 +13,13 @@ service Messenger {
     // Returns Ok Status if Succeded
     rpc JoinGroup (JoinInfo) returns (Status) {}
 
-    // Sends a message to the specific group. If the group does not exists, informs
+    // A bidirectional stream. Client informs the server that he/she is still listening,
+    // the server responds with a stream of messages addressed to client (subscribtion group)
+    rpc Listen (stream ListenStatus) returns (stream Message) {}
+
+    // Sends a message to the specific group. If the group does not exists, server informs
     // by appropriate status code, otherwise returns Ok Status.
-    rpc SendTo (Message) returns (Status) {}
-
-    // Sends a stream of messages to the specific group. If the group does not exists, informs
-    // by appropriate status code, otherwise returns Ok Status.
-    rpc StreamSendTo (stream Message) returns (Status) {}
-}
-
-// Interface exported by the Reciver - a server on the client side that handles notifications
-service Reciver {
-    
-    // Transfers a new message to the reciver.
-    //
-    // Returns Ok status if the reception was succesfull
-    rpc Notify (Message) returns (Status) {}
-
-    // Transfers stream of messages to the reciver.
-    //
-    // Returns Ok status if the reception was succesfull
-    rpc StreamNotify (stream Message) returns (Status) {}
+    rpc SendMsg (Message) returns (Status) {}
 }
 
 message MIME {
@@ -72,4 +58,9 @@ message InitStatus {
     uint32 code = 1;
     uint64 new_id = 2;
     string details = 3;
+}
+
+message ListenStatus {
+    bool confirm = 1;
+    uint64 client_id = 2;
 }
