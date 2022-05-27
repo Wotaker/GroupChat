@@ -40,7 +40,7 @@ class Client():
         # Inform the server that the client is up
 
             # Create ClientInfo init msg
-        self.client_info = chat_pb2.ClientInfo(nickname=self.nickname, port="0000")
+        self.client_info = chat_pb2.ClientInfo(nickname=nickname, port="0000")
         print("[Info] Sending Init message to server with client info")
 
             # Wait for server status respons and print the status when recived
@@ -72,6 +72,9 @@ class Client():
         status = self.connection.JoinGroup(join_info)
         print(f"[Info] Subscribtion change status code: {status.code}")
         print(f"[Info] Subscribtion change details: {status.details}")
+
+        if status.code == 0:
+            self.entry_message.insert(END, f"\n=== Subscribing group nr {new_group_id} ===\n\n")
         
     def __listen_for_messages(self):
         """
@@ -79,8 +82,23 @@ class Client():
         when waiting for new messages
         """
 
-        for msg in self.connection.Listen():
-            pass
+        # for msg in self.connection.Listen():
+        #     pass
+        pass
+    
+    def send_msg(self, msg):
+        """
+        Sends the msg to the server and displays it in chat window
+        """
+
+        print("[Info] Sending msg to the server")
+        status = self.connection.SendMsg(msg)
+        print(f"[Info] Sending status code: {status.code}")
+        print(f"[Info] Sending details: {status.details}")
+
+        # If msg delivered successfully, print on screen
+        if status.code == 0:
+            self.chat_list.insert(END, f"[You] {msg.text}\n")
 
     def parse_input(self, event):
         """
@@ -88,6 +106,7 @@ class Client():
         """
 
         entry_text = self.entry_message.get()
+        self.entry_message.delete(0, END)
 
         # Return if there is no text in the entry box
         if not entry_text:
@@ -98,15 +117,14 @@ class Client():
         # User entered some plain text -> Create msg and yeld it
         if parsed[0] == TXT:
             print("[Info] Plain text entered")
-
-            msg = chat_pb2.Message(
+            self.send_msg(chat_pb2.Message(
                 sender_id=self.id,
                 group_id=self.subscribtion_group,
                 priority=0,
                 text=parsed[1],
                 mime=None,
                 citation_id=0   # TODO Handle citation. 0 means no citation
-            )
+            ))
         
         # User wants to change subscribtion group
         elif parsed[0] == SUB:
@@ -121,9 +139,22 @@ class Client():
     def __setup_ui(self):
         self.chat_list = Text()
         self.chat_list.pack(side=TOP)
-        self.lbl_username = Label(self.window, text=self.username)
+        self.lbl_username = Label(self.window, text=self.nickname)
         self.lbl_username.pack(side=LEFT)
         self.entry_message = Entry(self.window, bd=5)
-        self.entry_message.bind('<Return>', self.send_message)
+        self.entry_message.bind('<Return>', self.parse_input)
         self.entry_message.focus()
         self.entry_message.pack(side=BOTTOM)
+
+
+if __name__ == '__main__':
+    root = Tk()
+    frame = Frame(root, width=300, height=300)
+    frame.pack()
+    root.withdraw()
+    nickname = None
+    while nickname is None:
+        # retrieve a username so we can distinguish all the different clients
+        nickname = simpledialog.askstring("Nickname", "What's your nickname?", parent=root)
+    root.deiconify()
+    c = Client(nickname, frame)

@@ -47,6 +47,7 @@ class Messenger(chat_pb2_grpc.MessengerServicer):
 
         with LOCK_TABLE:
             success = CLIENT_TABLE.add_subscribtion(request.client_id, request.group_id)
+            CLIENT_TABLE.backup()
 
         if not success:
             return chat_pb2.Status(
@@ -56,7 +57,7 @@ class Messenger(chat_pb2_grpc.MessengerServicer):
                     f"'{request.client_id}' does not exist"
             )
         
-        return chat_pb2.InitStatus(
+        return chat_pb2.Status(
             code=0,
             details=f"Client {request.client_id} successfully added to the " +\
                 f"{request.group_id} subscribtion group"
@@ -92,7 +93,12 @@ class Messenger(chat_pb2_grpc.MessengerServicer):
             for client_id in subscribers:
                 if request.sender_id != client_id:
                     MSG_BUFFER.put(client_id, request)
-        pass
+        
+        return chat_pb2.Status(
+            code=0,
+            details=f"Message from client {request.sender_id} to " +\
+                f"subscribtion group {request.group_id} succesfully delivered"
+        )
 
 
 if __name__ == "__main__":
@@ -104,9 +110,9 @@ if __name__ == "__main__":
     chat_pb2_grpc.add_MessengerServicer_to_server(servicer=Messenger(), server=server)
 
     # Assigning port and starting the server
-    print("[Info] Starting server...")
     server.add_insecure_port(f'[::]:{PORT_NUMBER}')
     server.start()
+    print("[Info] Server started successfully")
 
     # Do not exit until the server terminates
     server.wait_for_termination()
