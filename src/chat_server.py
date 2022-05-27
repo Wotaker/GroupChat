@@ -73,10 +73,10 @@ class Messenger(chat_pb2_grpc.MessengerServicer):
                 
                 # if there are any messages for the client, send those
                 with LOCK_BUFFER:
-                    potential_msg = MSG_BUFFER.get(served_client)
-                    while potential_msg is not None:
-                        yield potential_msg
-                        potential_msg = MSG_BUFFER.get(served_client)
+                    msg = MSG_BUFFER.get(served_client)
+                    while msg is not None:
+                        yield msg
+                        msg = MSG_BUFFER.get(served_client)
     
     def SendMsg(self, request, context):
 
@@ -90,7 +90,8 @@ class Messenger(chat_pb2_grpc.MessengerServicer):
         # Add message to the appropriate message buffers
         with LOCK_BUFFER:
             for client_id in subscribers:
-                MSG_BUFFER.put(client_id, request)
+                if request.sender_id != client_id:
+                    MSG_BUFFER.put(client_id, request)
         pass
 
 

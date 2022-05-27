@@ -1,4 +1,5 @@
 from src.chat_server import PORT_NUMBER
+from src.messenger_resources import NONE_GROUP_ID
 import gen.group_chat_pb2 as chat_pb2
 import gen.group_chat_pb2_grpc as chat_pb2_grpc
 
@@ -47,9 +48,10 @@ class Client():
         print(f"[Info] Initialization status code: {init_status.code}")
         print(f"[Info] Initialization details: {init_status.details}")
 
-            # Assign client id designated by server and set client nickname
+            # Assign client id designated by server, set client nickname, and default group
         self.id = init_status.new_id
         self.nickname = nickname
+        self.subscribtion_group = NONE_GROUP_ID
 
         # Create new listening thread for when new message streams come in
         threading.Thread(target=self.__listen_for_messages, daemon=True).start()
@@ -58,6 +60,18 @@ class Client():
         self.window = window
         self.__setup_ui()
         self.window.mainloop()
+    
+    def change_subscribtion(self, new_group_id):
+        """
+        Informs the Server that a client is changing his subscribtion group
+        """
+        
+        print(f"[Info] Changing subscribtion group to {new_group_id}")
+        self.subscribtion_group = new_group_id
+        join_info = chat_pb2.JoinInfo(client_id=self.id, group_id=new_group_id)
+        status = self.connection.JoinGroup(join_info)
+        print(f"[Info] Subscribtion change status code: {status.code}")
+        print(f"[Info] Subscribtion change details: {status.details}")
         
     def __listen_for_messages(self):
         """
@@ -65,18 +79,8 @@ class Client():
         when waiting for new messages
         """
 
-        pass
-
-    def change_subscribtion(self, new_group_id):
-        """
-        Informs the Server that a client is changing his subscribtion group
-        """
-        
-        print(f"[Info] Changing subscribtion group to {new_group_id}")
-        join_info = chat_pb2.JoinInfo(client_id=self.id, group_id=new_group_id)
-        status = self.connection.JoinGroup(join_info)
-        print(f"[Info] Subscribtion change status code: {status.code}")
-        print(f"[Info] Subscribtion change details: {status.details}")
+        for msg in self.connection.Listen():
+            pass
 
     def parse_input(self, event):
         """
@@ -91,10 +95,18 @@ class Client():
         
         parsed = parse(entry_text)
 
-        # User entered some plain text
+        # User entered some plain text -> Create msg and yeld it
         if parsed[0] == TXT:
             print("[Info] Plain text entered")
-            pass
+
+            msg = chat_pb2.Message(
+                sender_id=self.id,
+                group_id=self.subscribtion_group,
+                priority=0,
+                text=parsed[1],
+                mime=None,
+                citation_id=0   # TODO Handle citation. 0 means no citation
+            )
         
         # User wants to change subscribtion group
         elif parsed[0] == SUB:
