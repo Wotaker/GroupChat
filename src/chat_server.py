@@ -23,6 +23,9 @@ class Messenger(chat_pb2_grpc.MessengerServicer):
 
     def Init(self, request, context):
 
+        # Log client initialization
+        print(f"[Info] Received Init message from client '{request.nickname}'")
+
         with LOCK_TABLE:
             client_id = CLIENT_TABLE.add(request.nickname, request.port, NONE_GROUP_ID)
             backuped = CLIENT_TABLE.backup()
@@ -76,6 +79,9 @@ class Messenger(chat_pb2_grpc.MessengerServicer):
                         potential_msg = MSG_BUFFER.get(served_client)
     
     def SendMsg(self, request, context):
+
+        # Log msg reception
+        print(f"[Info] Received message from client {request.sender_id}, addressed to group {request.group_id}")
         
         # Get subscribers of the message target group
         with LOCK_TABLE:
