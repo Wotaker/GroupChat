@@ -66,18 +66,18 @@ class Messenger(chat_pb2_grpc.MessengerServicer):
     def Listen(self, request_iterator, context):
 
         # Exiting this loop means that we have lost connection with a client
-        while True:
-            for listen_status in request_iterator:
-                served_client = listen_status.client_id
-                if not listen_status.confirm:
-                    print(f"[Warning] Listen-status from client {served_client} did not confirmed")
-                
-                # if there are any messages for the client, send those
-                with LOCK_BUFFER:
+        # while True:
+        for listen_status in request_iterator:
+            served_client = listen_status.client_id
+            if not listen_status.confirm:
+                print(f"[Warning] Listen-status from client {served_client} did not confirmed")
+            
+            # if there are any messages for the client, send those
+            with LOCK_BUFFER:
+                msg = MSG_BUFFER.get(served_client)
+                while msg is not None:
+                    yield msg
                     msg = MSG_BUFFER.get(served_client)
-                    while msg is not None:
-                        yield msg
-                        msg = MSG_BUFFER.get(served_client)
     
     def SendMsg(self, request, context):
 

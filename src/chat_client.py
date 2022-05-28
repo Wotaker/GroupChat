@@ -66,7 +66,6 @@ class Client():
         Informs the Server that a client is changing his subscribtion group
         """
         
-        print(f"[Info] Changing subscribtion group to {new_group_id}")
         self.subscribtion_group = new_group_id
         join_info = chat_pb2.JoinInfo(client_id=self.id, group_id=new_group_id)
         status = self.connection.JoinGroup(join_info)
@@ -74,17 +73,25 @@ class Client():
         print(f"[Info] Subscribtion change details: {status.details}")
 
         if status.code == 0:
-            self.entry_message.insert(END, f"\n=== Subscribing group nr {new_group_id} ===\n\n")
-        
+            print(f"[Info] Changing subscribtion group to {new_group_id}")
+            self.chat_list.insert(END, f"\n=== Subscribing group nr {new_group_id} ===\n\n")
+    
     def __listen_for_messages(self):
         """
         This method will be ran in a separate thread as the main/ui thread, because the for-in call is blocking
         when waiting for new messages
         """
 
-        # for msg in self.connection.Listen():
-        #     pass
-        pass
+        def yield_listen_status():
+            while True:
+                yield chat_pb2.ListenStatus(confirm=True, client_id=self.id)
+        
+        for msg in self.connection.Listen(yield_listen_status()):
+            if self.subscribtion_group != msg.group_id:
+                print(f"[Warning] Recieved msg addressed for wrong subscribtion group {msg.group_id}!")
+            else:
+                print(f"[Info] Recieved msg from {msg.sender_id}")
+                self.chat_list.insert(END, f"[{msg.sender_id}] {msg.text}\n")
     
     def send_msg(self, msg):
         """
@@ -155,6 +162,6 @@ if __name__ == '__main__':
     nickname = None
     while nickname is None:
         # retrieve a username so we can distinguish all the different clients
-        nickname = simpledialog.askstring("Nickname", "What's your nickname?", parent=root)
+        nickname = simpledialog.askstring("Login", "Please enter your login:", parent=root)
     root.deiconify()
     c = Client(nickname, frame)
