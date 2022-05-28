@@ -30,13 +30,12 @@ message MIME {
 
 message Message {
     uint64 sender_id = 1;
-    uint64 group_id = 2;
-    uint32 priority = 3;
-    string text = 4;
-    MIME mime = 5;
-    // TODO Gdy wysyłamy wiadomość z id cytatu, to serwer przed propagacją, dołącza odpowiedni cytat.
-    // Można nawet tak zrobić, że w tekście jeżeli umieścimy %id%, to w tam pojawi się cytat
-    uint64 citation_id = 6;
+    string sender_nickname = 2;
+    uint64 group_id = 3;
+    uint32 priority = 4;
+    string text = 5;
+    MIME mime = 6;
+    string citation = 7;
 }
 
 message JoinInfo {

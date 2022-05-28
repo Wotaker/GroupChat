@@ -1,5 +1,5 @@
 from src.chat_server import PORT_NUMBER
-from src.messenger_resources import NONE_GROUP_ID
+from src.messenger_resources import MsgHistory
 import gen.group_chat_pb2 as chat_pb2
 import gen.group_chat_pb2_grpc as chat_pb2_grpc
 
@@ -13,25 +13,10 @@ TXT = 1
 SUB = 2
 CIT = 3
 
-def parse(text):
-
-    # Search if the input is subscribtion change
-    subscribtion = re.findall(r'\$\d+', text)
-    if subscribtion:
-        return SUB, int(subscribtion[0][1:])
-    
-    # Search for a citation in text
-    citation = re.findall(r'%\d+%', text)
-    if citation:
-        return CIT, int(citation[0][1:-1])
-
-    # Otherwise no special substring present
-    return TXT, text
-
 
 class Client():
 
-    def __init__(self, nickname, window) -> None:        
+    def __init__(self, nickname: str, window) -> None:        
         
         # Create a gRPC channel and stub
         channel = grpc.insecure_channel(f'localhost:{PORT_NUMBER}')
@@ -53,6 +38,9 @@ class Client():
         self.nickname = nickname
         self.subscribtion_group = init_status.new_group_id
 
+        # Create the msg history
+        self.history = MsgHistory()
+
         # Create new listening thread for when new message streams come in
         threading.Thread(target=self.__listen_for_messages, daemon=True).start()
 
@@ -60,6 +48,29 @@ class Client():
         self.window = window
         self.__setup_ui()
         self.window.mainloop()
+    
+    def parse(self, text):
+        """
+        Parses the text. 
+        If SUB -> returns (SUB, subscribtion group).
+        If CIT -> returns (CIT, input text with inserted citation).
+        If TXT -> returns (TXT, unchanged input text)
+        """
+
+        # Search if the input is subscribtion change
+        subscribtion = re.findall(r'\$\d+', text)
+        if subscribtion:
+            return SUB, int(subscribtion[0][1:])
+        
+        # Search for a citation in text
+        citation = re.findall(r'%\d+%', text)
+        if citation:
+            citation = self.history.get(int(citation[0][1:-1])).text
+            citation = f"cite[{citation}]" if citation else ""
+            return CIT, re.sub(r'%\d+%', citation, text)
+
+        # Otherwise no special substring present
+        return TXT, text
     
     def change_subscribtion(self, new_group_id):
         """
@@ -78,8 +89,8 @@ class Client():
     
     def __listen_for_messages(self):
         """
-        This method will be ran in a separate thread as the main/ui thread, because the for-in call is blocking
-        when waiting for new messages
+        This method runs in separate thread, becouse listening is blocking. It sends listen status
+        confirm when ready for new msg. It displays and saves in history recieved msgs.
         """
 
         def yield_listen_status():
@@ -90,12 +101,13 @@ class Client():
             if self.subscribtion_group != msg.group_id:
                 print(f"[Warning] Recieved msg addressed for wrong subscribtion group {msg.group_id}!")
             else:
-                print(f"[Info] Recieved msg from {msg.sender_id}")
-                self.chat_list.insert(END, f"[{msg.sender_id}] {msg.text}\n")
+                print(f"[Info] Recieved msg from {msg.sender_id} ({msg.sender_nickname})")
+                msg_id = self.history.put(msg)
+                self.chat_list.insert(END, f"{msg_id:03d} | {msg.sender_nickname}: {msg.text}\n")
     
     def send_msg(self, msg):
         """
-        Sends the msg to the server and displays it in chat window
+        Sends the msg to the server and displays it in chat window. Also saves the msg in history
         """
 
         print("[Info] Sending msg to the server")
@@ -105,7 +117,8 @@ class Client():
 
         # If msg delivered successfully, print on screen
         if status.code == 0:
-            self.chat_list.insert(END, f"[You] {msg.text}\n")
+            msg_id = self.history.put(msg)
+            self.chat_list.insert(END, f"{msg_id:03d} | You: {msg.text}\n")
 
     def parse_input(self, event):
         """
@@ -119,29 +132,25 @@ class Client():
         if not entry_text:
             return
         
-        parsed = parse(entry_text)
+        parsed = self.parse(entry_text)
 
         # User entered some plain text -> Create msg and yeld it
-        if parsed[0] == TXT:
+        if parsed[0] == TXT or parsed[0] == CIT:
             print("[Info] Plain text entered")
             self.send_msg(chat_pb2.Message(
                 sender_id=self.id,
+                sender_nickname=self.nickname,
                 group_id=self.subscribtion_group,
                 priority=0,
                 text=parsed[1],
                 mime=None,
-                citation_id=0   # TODO Handle citation. 0 means no citation
+                citation=""
             ))
         
         # User wants to change subscribtion group
         elif parsed[0] == SUB:
             print(f"[Info] Changing subscribtion to group {parsed[1]}")
             self.change_subscribtion(parsed[1])
-
-        # TODO Handle the citations
-        elif parsed[0] == CIT:
-            print("[Info] Citation found, unimplemented!")
-            pass
 
     def __setup_ui(self):
         self.chat_list = Text()

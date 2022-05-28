@@ -118,10 +118,11 @@ class DataBase():
 class MsgBuffer():
 
     def __init__(self: object) -> None:
+
         self.buffer = dict()
 
 
-    def put(self: object, id: int, msg: Message):
+    def put(self: object, id: int, msg: Message) -> None:
         """Add message to the buffer of client with given id"""
         
         if not (id in self.buffer.keys()):
@@ -142,3 +143,26 @@ class MsgBuffer():
             return None
 
         return self.buffer[id].get()
+
+
+class MsgHistory():
+
+    def __init__(self) -> None:
+        self.history = dict()
+        self.last_id = 0
+    
+    def put(self: object, msg: Message) -> int:
+        """saves the message in the history, and returns the msg identifier"""
+        
+        self.last_id += 1
+        self.history[self.last_id] = msg
+        return self.last_id
+    
+    def get(self: object, id: int) -> Message:
+        """retrives the msg with the given id from history, returns None if no such msg saved"""
+
+        if not (id in self.history.keys()):
+            return None
+        
+        return self.history[id]
+    

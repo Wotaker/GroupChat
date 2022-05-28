@@ -8,11 +8,12 @@ def random_msg() -> Message:
     mime = Mime(type="image", subtype="jpeg", data=bytes(np.random.bytes(10)))
     return Message(
         sender_id=np.random.randint(1, 10),
+        sender_nickname="Someone",
         group_id=np.random.randint(1, 5),
         priority=np.random.randint(1, 4),
         text="Sample Msg",
         mime=mime,
-        citation_id=np.random.randint(1, 100)
+        citation=""
     )
 
 def test_buffer():
