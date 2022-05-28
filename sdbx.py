@@ -28,7 +28,7 @@ def test_database():
     db = DataBase()
     db.add(1, "3001", 1234)
     db.add(3, "3003", 0)
-    print(db.exists(2))
+    print(db.exists_by_id(2))
     print(db.add_subscribtion(3, 1234))
     db.add(20, "3020", 0)
     print(db.delete(4))

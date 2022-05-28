@@ -40,7 +40,7 @@ class Client():
         # Inform the server that the client is up
 
             # Create ClientInfo init msg
-        self.client_info = chat_pb2.ClientInfo(nickname=nickname, port="0000")
+        self.client_info = chat_pb2.ClientInfo(nickname=nickname)
         print("[Info] Sending Init message to server with client info")
 
             # Wait for server status respons and print the status when recived
@@ -51,7 +51,7 @@ class Client():
             # Assign client id designated by server, set client nickname, and default group
         self.id = init_status.new_id
         self.nickname = nickname
-        self.subscribtion_group = NONE_GROUP_ID
+        self.subscribtion_group = init_status.new_group_id
 
         # Create new listening thread for when new message streams come in
         threading.Thread(target=self.__listen_for_messages, daemon=True).start()

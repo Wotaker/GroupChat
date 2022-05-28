@@ -27,19 +27,21 @@ class Messenger(chat_pb2_grpc.MessengerServicer):
         print(f"[Info] Received Init message from client '{request.nickname}'")
 
         with LOCK_TABLE:
-            client_id = CLIENT_TABLE.add(request.nickname, request.port, NONE_GROUP_ID)
+            client_id, group_id = CLIENT_TABLE.add(request.nickname, NONE_GROUP_ID)
             backuped = CLIENT_TABLE.backup()
 
         if not backuped:
             return chat_pb2.InitStatus(
                 code=1,
                 new_id=client_id,
+                new_group_id=group_id,
                 details="Client has not been backuped in the client table"
             )
         
         return chat_pb2.InitStatus(
             code=0,
             new_id=client_id,
+            new_group_id=group_id,
             details="Backuped successfully"
         )
     

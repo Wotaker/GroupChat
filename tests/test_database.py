@@ -2,19 +2,29 @@ from tokenize import group
 from src.messenger_resources import DataBase
 import time
 import os
+import numpy as np
 
 def test_database():
 
     print("=== Database test ===\n")
 
     db = DataBase()
-    id_ola = db.add("ola", "3001", 1234)
-    id_ula = db.add("ula", "3003", 0)
+    id_ola, gr_ola = db.add("ola", 1234)
+    id_ula, gr_ula = db.add("ula", 0)
+    id_ola_v2, gr_ola_v2 = db.add("ola", 0)
 
-    assert db.exists(2)
+    assert id_ola == id_ola_v2
+    assert gr_ola == gr_ola_v2
+    assert gr_ola_v2 == 1234
+    assert db.db.shape == (2, 2)
+
+    assert db.exists_by_id(2)
+    assert db.exists_by_nickname("ola")
+    assert not db.exists_by_nickname("Zbych")
+
     assert db.add_subscribtion(2, 1234)
     
-    db.add("ela", "3020", 0)
+    db.add("ela", 0)
 
     group_1234 = db.get_subscribers(1234)
     print(f"group 1234 subscribers: {group_1234}")
@@ -35,13 +45,20 @@ def test_database():
     db2 = DataBase()
     db2.show(sep=True)
     
-    print(type(db2.db.loc[3, "Port"]), db2.db.loc[3, "Port"])
-    
     print("Removing database csv file...")
     time.sleep(1)
     os.remove(db.save_path)
 
     print("\nAll tests passed!")
 
+def prototype():
+    db = DataBase()
+    id_ola, _ = db.add("ola", 1234)
+    id_ula, _ = db.add("ula", 0)
+    db.show()
+
+    print(db.db.index[db.db["Nick"] == "ula"].to_list()[0])
+
 if __name__ == "__main__":
     test_database()
+    # prototype()

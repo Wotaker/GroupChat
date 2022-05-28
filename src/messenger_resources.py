@@ -32,27 +32,38 @@ class DataBase():
             self.db: pd.DataFrame = pd.DataFrame({
                 'Id': pd.Series(dtype='int'),
                 'Nick': pd.Series(dtype='str'),
-                'Port': pd.Series(dtype='str'),
                 'GroupId': pd.Series(dtype='int')
             }).set_index("Id")
     
-    def exists(self: object, id: int) -> bool:
+    def exists_by_id(self: object, id: int) -> bool:
         """checks if client with given id is in database"""
 
         return id in self.db.index.to_list()
+    
+    def exists_by_nickname(self: object, nickname: str) -> bool:
+        """checks if client with given nickname is in database"""
 
-    def add(self: object, nick: str, port: str, group_id: int) -> int:
-        """adds new client to the client table"""
+        return nickname in np.array(self.db["Nick"])
+
+    def add(self: object, nick: str, group_id: int) -> tuple[int, int]:
+        """
+        adds new client to the client table. If the client already exists, return clients
+        id and recent subscribtion group
+        """
+
+        if self.exists_by_nickname(nick):
+            id = self.db.index[self.db["Nick"] == nick].to_list()[0]
+            return id, self.db.loc[id, "GroupId"]
 
         id = self.db.last_valid_index()
         id = 1 if id is None else id + 1
-        self.db.loc[id] = [nick, port, group_id]
-        return id
+        self.db.loc[id] = [nick, group_id]
+        return id, group_id
 
     def delete(self: object, id: int) -> bool:
         """deletes client with given id, returns True on success, False otherwise"""
 
-        if not self.exists(id):
+        if not self.exists_by_id(id):
             return False
         self.db.drop([id], inplace=True)
         return True
@@ -61,7 +72,7 @@ class DataBase():
         """adds sbscribed group for a client with given id, or modifies subscribtion if present.
         Returns False if there is no client with given id, otherwise returns True"""
 
-        if self.exists(id):
+        if self.exists_by_id(id):
             self.db.loc[(id, "GroupId")] = group_id
             return True
         return False
@@ -90,7 +101,7 @@ class DataBase():
         
         try:
             self.db = pd.read_csv(
-                self.save_path, converters={'Port': str}
+                self.save_path
             ).set_index("Id")
             print(self.db.dtypes)
         except FileNotFoundError:
