@@ -1,0 +1,55 @@
+{
+  "artificialDelayMilliseconds": 200,
+  "keepExistingTerminalsOpen": false,
+  "runOnStartup": true,
+  "terminals": [
+    {
+      "splitTerminals": [
+        {
+          "name": "server",
+          "commands": [ 
+              "set PYTHONPATH=%PYTHONPATH%;C:\\Users\\wojci\\Desktop\\AGH\\Semestr VI\\Systemy Rozproszone\\Lab05-Zadanie\\GroupChat\\"
+            ]
+        },
+        {
+          "name": "client",
+          "commands": [ 
+            "set PYTHONPATH=%PYTHONPATH%;C:\\Users\\wojci\\Desktop\\AGH\\Semestr VI\\Systemy Rozproszone\\Lab05-Zadanie\\GroupChat\\"
+          ]
+        }
+      ]
+    },
+    {
+      "splitTerminals": [
+        {
+          "name": "client1",
+          "commands": [ 
+              "set PYTHONPATH=%PYTHONPATH%;C:\\Users\\wojci\\Desktop\\AGH\\Semestr VI\\Systemy Rozproszone\\Lab05-Zadanie\\GroupChat\\"
+            ]
+        },
+        {
+          "name": "client2",
+          "commands": [
+            "set PYTHONPATH=%PYTHONPATH%;C:\\Users\\wojci\\Desktop\\AGH\\Semestr VI\\Systemy Rozproszone\\Lab05-Zadanie\\GroupChat\\"
+          ]
+        },
+        {
+          "name": "client3",
+          "commands": [
+            "set PYTHONPATH=%PYTHONPATH%;C:\\Users\\wojci\\Desktop\\AGH\\Semestr VI\\Systemy Rozproszone\\Lab05-Zadanie\\GroupChat\\"
+          ]
+        }
+      ]
+    },
+    {
+      "splitTerminals": [
+        {
+          "name": "cmd",
+          "commands": [
+              "set PYTHONPATH=%PYTHONPATH%;C:\\Users\\wojci\\Desktop\\AGH\\Semestr VI\\Systemy Rozproszone\\Lab05-Zadanie\\GroupChat\\"
+            ]
+        }
+      ]
+    }
+  ]
+}
